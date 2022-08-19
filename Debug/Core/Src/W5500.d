@@ -32,7 +32,7 @@ Core/Src/W5500.o: ../Core/Src/W5500.c \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
  ../Core/Inc/w5500.h ../Core/Inc/spi.h ../Core/Inc/main.h \
- ../Core/Inc/w5500.h
+ ../Core/Inc/w5500.h ../Core/Inc/usart.h
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rcc.h:
@@ -69,3 +69,4 @@ Core/Src/W5500.o: ../Core/Src/W5500.c \
 ../Core/Inc/spi.h:
 ../Core/Inc/main.h:
 ../Core/Inc/w5500.h:
+../Core/Inc/usart.h:

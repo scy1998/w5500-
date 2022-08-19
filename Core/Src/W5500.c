@@ -14,7 +14,7 @@
 #include "string.h"
 #include "spi.h"
 //#include "log.h"
-
+#include "usart.h"
 
 
 /*网络参数定义*/
@@ -816,7 +816,8 @@ void Write_SOCK_Data_Buffer(SOCKET s, unsigned char *dat_ptr, unsigned short siz
 	
 	offset1+=size;//更新实际物理地址,即下次写待发送数据到发送数据缓冲区的起始地址
 	Write_W5500_SOCK_2Byte(s, Sn_TX_WR, offset1);
-	Write_W5500_SOCK_1Byte(s, Sn_CR, SEND);//发送启动发送命令				
+	Write_W5500_SOCK_1Byte(s, Sn_CR, SEND);//发送启动发送命令
+	  printf("w5500 send data success!\r\n");
 }
 
 
@@ -897,7 +898,8 @@ void W5500_Init(void)
 	//其它是Socket事件中断，根据需要添加
 	Write_W5500_1Byte(IMR,IM_IR7 | IM_IR6);
 	Write_W5500_1Byte(SIMR,S0_IMR);
-	Write_W5500_SOCK_1Byte(0, Sn_IMR, IMR_SENDOK | IMR_TIMEOUT | IMR_RECV | IMR_DISCON | IMR_CON);
+	//Write_W5500_SOCK_1Byte(0, Sn_IMR, IMR_SENDOK | IMR_TIMEOUT | IMR_RECV | IMR_DISCON | IMR_CON);
+	Write_W5500_SOCK_1Byte(0, Sn_IMR,   IMR_TIMEOUT | IMR_RECV | IMR_DISCON | IMR_CON);
 
 }
 
@@ -1178,11 +1180,11 @@ IntDispose:
 			Socket_Init(0);		//指定Socket(0~7)初始化,初始化端口0
 			S0_State=0;//网络连接状态0x00,端口连接失败
 		}
-		if(j&IR_SEND_OK)//Socket0数据发送完成,可以再次启动S_tx_process()函数发送数据 
-		{
-			printf("data SEND_OK\n\r");
-			S0_Data|=S_TRANSMITOK;//端口发送一个数据包完成 
-		}
+//		if(j&IR_SEND_OK)//Socket0数据发送完成,可以再次启动S_tx_process()函数发送数据
+//		{
+//			printf("data SEND_OK\n\r");
+//			S0_Data|=S_TRANSMITOK;//端口发送一个数据包完成
+//		}
 		if(j&IR_RECV)//Socket接收到数据,可以启动S_rx_process()函数 
 		{
 			printf("data RECV_OK!\n\r");
@@ -1275,9 +1277,9 @@ void Process_Socket_Data(SOCKET s)
 	size=Read_SOCK_Data_Buffer(s, Rx_Buffer);
 	//DEBUG_PRINT("size=%d\n",size);
 	
-	for(int i=0;i<size;i++){
-		printf("%c ",Rx_Buffer[i]);
-	}
+//	for(int i=0;i<size;i++){
+//		printf("%c ",Rx_Buffer[i]);
+//	}
 	S0_DIP[0] = Rx_Buffer[0];
 	//DEBUG_PRINT("UDP_DIPR:%d\n",Rx_Buffer[0]);
 	S0_DIP[1] = Rx_Buffer[1];
@@ -1288,7 +1290,9 @@ void Process_Socket_Data(SOCKET s)
 	S0_DPort[1] = Rx_Buffer[5];
 	memcpy(Tx_Buffer, Rx_Buffer+8, size-8);
 	Tx_Buffer[size-8] = 0xFF;
-	Write_SOCK_Data_Buffer(s, Tx_Buffer, size-7);
+	//Write_SOCK_Data_Buffer(s, Tx_Buffer, size-7);
+	HAL_UART_Transmit(&huart4, Tx_Buffer, size - 7, 200);
+	printf("uart4 receive data from w5500\r\n");
 }
 
 void W5500_Socket_Set(void)

@@ -38,8 +38,10 @@ extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
 
-#define USART_REC_LEN  			200  		//定义�?大接收字节数 200
+#define USART_REC_LEN  			200  		//定义�??大接收字节数 200
 #define DMA_BUFFER_LENGTH       256
+extern int DMA_RECV_flag;
+extern int dma_recv_len ;
 
 extern uint8_t temp;
 
@@ -49,6 +51,7 @@ extern uint16_t USART_RX_STA;         			//接收状�??
 extern uint8_t aRxBuffer[1];			//HAL库USART接收Buffer
 
 extern uint8_t DMA_Buffer[DMA_BUFFER_LENGTH];
+extern uint8_t Data_Buffer[DMA_BUFFER_LENGTH];
 
 
 /* USER CODE END Private defines */

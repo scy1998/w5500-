@@ -25,12 +25,13 @@
 uint8_t DMA_Buffer[DMA_BUFFER_LENGTH];
 
 uint8_t aRxBuffer[1];
-
+int DMA_RECV_flag = 0;
+int dma_recv_len = 0;
 uint8_t temp=0;
 uint8_t USART_RX_BUF[USART_REC_LEN];   //接收缓冲
 //接收状�?�位
 //bit15接收完成标志
-//bit14接收�???????0x0d
+//bit14接收�????????0x0d
 //bit13~0接收到的有效字节数目
 uint16_t USART_RX_STA=0;//接收状�??
 
@@ -175,7 +176,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_uart4_tx);
 
     /* UART4 interrupt Init */
-    HAL_NVIC_SetPriority(UART4_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(UART4_IRQn, 1, 0);
     HAL_NVIC_EnableIRQ(UART4_IRQn);
   /* USER CODE BEGIN UART4_MspInit 1 */
 

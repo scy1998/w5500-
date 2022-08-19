@@ -39,13 +39,13 @@
 
 
 /*例程网络参数*/
-//网关�????????????192.168.1.1
+//网关�?????????????192.168.1.1
 //掩码:	255.255.255.0
-//物理地址�????????????0C 29 AB 7C 00 01
+//物理地址�?????????????0C 29 AB 7C 00 01
 //本机IP地址:192.168.1.199
-//端口0的端口号�????????????5000
-//端口0的目的IP地址�????????????192.168.1.190
-//端口0的目的端口号�????????????6000
+//端口0的端口号�?????????????5000
+//端口0的目的IP地址�?????????????192.168.1.190
+//端口0的目的端口号�?????????????6000
 
 /* USER CODE END PD */
 
@@ -65,8 +65,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-unsigned int Timer2_Counter=0; //定时器计数变�???????????(s)
-unsigned int W5500_Send_Delay_Counter=0; //w5500发�?�延时计数变�???????????(s)
+unsigned int Timer2_Counter=0; //定时器计数变�????????????(s)
+unsigned int W5500_Send_Delay_Counter=0; //w5500发�?�延时计数变�????????????(s)
 uint8_t  buf[] = "hello";
 
 
@@ -139,21 +139,22 @@ int main(void)
   MX_USART2_UART_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-//  HAL_TIM_Base_Start_IT((TIM_HandleTypeDef *)&htim2); //�???????????启定时器2中断
+//  HAL_TIM_Base_Start_IT((TIM_HandleTypeDef *)&htim2); //�????????????启定时器2中断
 
   printf("uart init success\n\r");
 
   Load_Net_Parameters();		//装载网络参数
   	W5500_Hardware_Reset();		//硬件复位W5500
-  	W5500_Initialization();		//W5500初始货配�????????????
+  	W5500_Initialization();		//W5500初始货配�?????????????
   	printf("w5500 init success\n\r");
-  	W5500_Socket_Set();//W5500端口初始化配�?
-
+  	W5500_Socket_Set();//W5500端口初始化配�??
   	__HAL_UART_ENABLE_IT(&huart4, UART_IT_IDLE);
-  	//__HAL_UART_ENABLE_IT(&huart4, UART_IT_RXNE);
-  	__HAL_UART_CLEAR_IDLEFLAG(&huart4);
+  	__HAL_UART_ENABLE_IT(&huart4, UART_IT_RXNE);
+  	//__HAL_UART_CLEAR_IDLEFLAG(&huart4);
   	HAL_UART_Receive_DMA(&huart4, DMA_Buffer, DMA_BUFFER_LENGTH);
+
   /* USER CODE END 2 */
+  	HAL_Delay(1000);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -164,17 +165,27 @@ int main(void)
 //	  HAL_Delay(2000);
 //	  HAL_UART_Transmit(&huart4, buf, sizeof(buf), 200);
 
-
-//	  		if(W5500_Interrupt)//处理W5500中断
-//	  		{
-//	  			W5500_Interrupt_Process();//W5500中断处理程序框架
+//
+//	  	  printf("system is running\r\n");
+//	  	  HAL_Delay(1000);
+	  		if(W5500_Interrupt)//处理W5500中断
+	  		{
+	  			W5500_Interrupt_Process();//W5500中断处理程序框架
+	  		}
+	  		if((S0_Data & S_RECEIVE) == S_RECEIVE)//如果Socket0接收到数�??
+	  		{
+	  			S0_Data&=~S_RECEIVE;
+	  			Process_Socket_Data(0);//W5500接收并发送接收到的数�??
+	  		}
+//	  		if (DMA_RECV_flag){
+//	  			DMA_RECV_flag = 0;
+//	  			//  printf("w5500 send data success!\r\n");
+//				  Write_SOCK_Data_Buffer(0, DMA_Buffer, dma_recv_len);
+//				  dma_recv_len = 0;
+//				 // HAL_UART_Transmit(&huart4, DMA_Buffer, len, 200);
+//				  memset(DMA_Buffer, 0, DMA_BUFFER_LENGTH);
+//				  HAL_UART_Receive_DMA(&huart4, DMA_Buffer, DMA_BUFFER_LENGTH);
 //	  		}
-//	  		if((S0_Data & S_RECEIVE) == S_RECEIVE)//如果Socket0接收到数�?
-//	  		{
-//	  			S0_Data&=~S_RECEIVE;
-//	  			Process_Socket_Data(0);//W5500接收并发送接收到的数�?
-//	  		}
-
 
 
 //	  		HAL_Delay(1000);
@@ -182,7 +193,7 @@ int main(void)
 //	  			{
 //	  				S0_Data&=~S_TRANSMITOK;
 //	  				memcpy(Tx_Buffer, "Welcome To NiRenElec!\r\n", 23);
-//	  				Write_SOCK_Data_Buffer(0, Tx_Buffer, 23);//指定Socket(0~7)发�?�数据处�?,端口0发�??23字节数据
+//	  				Write_SOCK_Data_Buffer(0, Tx_Buffer, 23);//指定Socket(0~7)发�?�数据处�??,端口0发�??23字节数据
 //	  				printf("data send success!\n\r");
 //	  			}
 

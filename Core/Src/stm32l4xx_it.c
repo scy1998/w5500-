@@ -240,13 +240,17 @@ void UART4_IRQHandler(void)
   HAL_UART_IRQHandler(&huart4);
   /* USER CODE BEGIN UART4_IRQn 1 */
   if(__HAL_UART_GET_FLAG(&huart4, UART_FLAG_IDLE) != RESET){
-	  __HAL_UART_CLEAR_IDLEFLAG(&huart4); //清楚空闲中断标志位
+	  __HAL_UART_CLEAR_IDLEFLAG(&huart4); //清楚空闲中断标志�?
 	  HAL_UART_DMAStop(&huart4);		//停止本次DMA传输
-
+	  if (DMA_RECV_flag == 0){
+	  		  DMA_RECV_flag = 1;
+	  		  HAL_UART_Receive_DMA(&huart4, DMA_Buffer, DMA_BUFFER_LENGTH);
+	  		  return;
+	  	  }
 	  unsigned int len = DMA_BUFFER_LENGTH  - __HAL_DMA_GET_COUNTER(&hdma_uart4_rx);
-	  printf("w5500 send data success!\r\n");
+	//  memcpy(Data_Buffer, DMA_Buffer, sizeof(DMA_Buffer));
 	  Write_SOCK_Data_Buffer(0, DMA_Buffer, len);
-	  HAL_UART_Transmit(&huart4, DMA_Buffer, len, 200);
+//	  HAL_UART_Transmit(&huart4, DMA_Buffer, len, 200);
 	  memset(DMA_Buffer, 0, DMA_BUFFER_LENGTH);
 	  HAL_UART_Receive_DMA(&huart4, DMA_Buffer, DMA_BUFFER_LENGTH);
   }
