@@ -1,0 +1,366 @@
+/*
+ *DEBUG_LOG(PRINT_FLAG, format)
+ *��PRINT_FLAG==PRINT_SCREENʱ��logֱ���������Ļ����PRINT_FLAG==PRINT_SRAMʱ��log�������������
+ *Ȼ��ͨ��log_output()���������ӡ����
+ */
+#include "log.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include "stm32l4xx_hal.h"
+
+//#include "portable.h"
+
+uint8_t print_switch[32] = {1,0,0,0};
+int write_flag = 0;
+uint32_t write_time = 0;
+char modName[20]={"MN:unknow "};
+uint8_t LogLock[MOD_MAX] = { 1 };//��־��
+uint8_t logOnN=1;//0:off log, 1:on log
+uint8_t logOnA=1;
+uint8_t logOnE=1;
+
+uint32_t LOG_LEVEL = 2;
+uint8_t level = 0;
+CircleBufferMngr* pmngr;
+CircleBufferMngr* pmngr_RX;
+//CircleBufferMngr* lpmngr_RX;
+//CircleBufferMngr* ulpmngr;
+//CircleBufferMngr* dlpmngr;
+//CircleBufferMngr* ctpmngr;
+
+#define OUT_BUF_SIZE 1200
+extern UART_HandleTypeDef huart2;
+static uint8_t g_out_buf[OUT_BUF_SIZE]={0}; 
+
+
+uint8_t writefailCount = 0;
+
+
+//��ʼ��
+static void cb_init(CircleBufferMngr **pmngr, uint32_t buflen)
+{
+	static uint8_t buff_init_error[] = "Circle buff init failed!\r\n";
+	static uint8_t buff_init_success[] = "Circle buff init prosperity!\r\n";
+	if (NULL != *pmngr || 0 == buflen){
+		HAL_UART_Transmit_DMA(&huart2, buff_init_error, strlen((char*)buff_init_error));
+		return;
+	}
+    *pmngr = (CircleBufferMngr*)malloc(sizeof(CircleBufferMngr));
+	if(*pmngr == NULL){
+		HAL_UART_Transmit_DMA(&huart2, buff_init_error, strlen((char*)buff_init_error));
+		return;
+	}
+	memset((void*)*pmngr, 0, sizeof(CircleBufferMngr));
+	(*pmngr)->bufptr = (uint8_t *)malloc(buflen * sizeof(char ));
+	if((*pmngr)->bufptr == NULL){
+		HAL_UART_Transmit_DMA(&huart2, buff_init_error, strlen((char*)buff_init_error));
+		return;
+	}
+	(*pmngr)->buflen = buflen;
+	memset((void*)(*pmngr)->bufptr, 0, buflen);
+	HAL_UART_Transmit_DMA(&huart2, buff_init_success, strlen((char*)buff_init_success));
+//	DEBUG_PRINT(GREEN_CHAN, "Circle!\r\n"); //Circle buff init prosperity!
+}
+
+void LogInitList(uint16_t bufflen)
+{
+	pmngr_RX = NULL;
+	cb_init(&pmngr_RX,bufflen);
+}
+//д�뺯��
+uint32_t cb_write(CircleBufferMngr *pmngr, uint8_t *dataptr, uint32_t datalen)
+{
+	write_flag = 1;
+	uint32_t writelen = 0, tmplen = 0;  
+	if(pmngr == NULL || pmngr->bufptr == NULL || dataptr == NULL || datalen == 0){
+		write_flag = 0;
+		return 0;
+	}
+	tmplen = pmngr->buflen - pmngr->datalen;
+	writelen = tmplen > datalen ? datalen : tmplen;
+	
+	if(pmngr->writepos < pmngr->readpos){
+		memcpy((void*)&pmngr->bufptr[pmngr->writepos],(void*)dataptr,writelen);
+	} else {
+		tmplen = pmngr->buflen - pmngr->writepos;
+		if(writelen <= tmplen){
+			memcpy((void*)&pmngr->bufptr[pmngr->writepos],(void*)dataptr,writelen);
+		} else {
+			memcpy((void*)&pmngr->bufptr[pmngr->writepos],(void*)dataptr,tmplen);
+			memcpy((void*)pmngr->bufptr,(void*)&dataptr[tmplen],writelen - tmplen);
+		}
+	}
+ 
+	pmngr->writepos = (pmngr->writepos + writelen) % pmngr->buflen;
+	pmngr->datalen += writelen; 
+	write_flag = 0;
+	printf("datalen size : %ld, write position %ld, time %ld\n\r", pmngr->datalen,pmngr->writepos,write_time);
+//	printf("write position: %ld\n\r", pmngr->writepos);
+	return writelen;
+}
+//��������
+uint32_t cb_read(CircleBufferMngr *pmngr,uint8_t *outbuf,uint32_t buflen)
+{
+	if (pmngr->datalen)
+		  printf("write time %d, read time %d, readpos %d\r\n",write_time, HAL_GetTick(),pmngr->readpos);
+	uint32_t readlen = 0, tmplen = 0;
+
+	if(NULL == pmngr || pmngr->bufptr == NULL || outbuf == NULL || buflen == 0 || write_flag){
+		printf("cb_read error\r\n");
+		return 0;
+	}
+  readlen = buflen > pmngr->datalen ? pmngr->datalen : buflen;
+  tmplen = pmngr->buflen - pmngr->readpos;
+
+  if(NULL != outbuf){
+		if(readlen <= tmplen){
+			memcpy((void*)outbuf,(void*)&pmngr->bufptr[pmngr->readpos],readlen);
+    } else {
+			memcpy((void*)outbuf,(void*)&pmngr->bufptr[pmngr->readpos],tmplen);
+			memcpy((void*)&outbuf[tmplen],(void*)pmngr->bufptr,readlen - tmplen);
+    }
+  }
+    if (pmngr->datalen)
+	   printf("datalen %d, readlen %d\r\n", pmngr->datalen, readlen);
+    pmngr->readpos = (pmngr->readpos + readlen) % pmngr->buflen;
+    pmngr->datalen -= readlen;  
+
+	return readlen;
+}
+uint32_t cb_read_without_copy(CircleBufferMngr *pmngr,uint8_t *outbuf,uint32_t buflen)
+{
+	uint32_t readlen = 0, tmplen = 0;
+	 
+	if(NULL == pmngr || pmngr->bufptr == NULL || outbuf == NULL || buflen == 0){
+		return 0;
+	}
+  readlen = buflen > pmngr->datalen ? pmngr->datalen : buflen;
+  tmplen = pmngr->buflen - pmngr->readpos;
+	
+  if(NULL != outbuf){
+		if(readlen <= tmplen){
+			//memcpy((void*)outbuf,(void*)&pmngr->bufptr[pmngr->readpos],readlen);
+    } else {
+			//memcpy((void*)outbuf,(void*)&pmngr->bufptr[pmngr->readpos],tmplen);
+      //memcpy((void*)&outbuf[tmplen],(void*)pmngr->bufptr,readlen - tmplen);
+    }
+  }
+    pmngr->readpos = (pmngr->readpos + readlen) % pmngr->buflen;
+    pmngr->datalen -= readlen;    
+  return readlen;
+}
+//��������
+uint32_t cb_read_without_delete(CircleBufferMngr *pmngr,uint8_t *outbuf,uint32_t buflen)
+{
+	uint32_t readlen = 0, tmplen = 0;
+	 
+	if(NULL == pmngr || pmngr->bufptr == NULL || outbuf == NULL || buflen == 0){
+		return 0;
+	}
+  readlen = buflen > pmngr->datalen ? pmngr->datalen : buflen;
+  tmplen = pmngr->buflen - pmngr->readpos;
+	
+  if(NULL != outbuf){
+		if(readlen <= tmplen){
+			memcpy((void*)outbuf,(void*)&pmngr->bufptr[pmngr->readpos],readlen);
+    } else {
+			memcpy((void*)outbuf,(void*)&pmngr->bufptr[pmngr->readpos],tmplen);
+      memcpy((void*)&outbuf[tmplen],(void*)pmngr->bufptr,readlen - tmplen);
+    }
+  }
+    //pmngr->readpos = (pmngr->readpos + readlen) % pmngr->buflen;
+    //pmngr->datalen -= readlen;    
+  return readlen;
+}
+
+int sram_read(void)
+{
+	 if (huart2.gState == HAL_UART_STATE_READY){
+		 uint32_t readlen = cb_read(pmngr,g_out_buf,OUT_BUF_SIZE);
+		 if(readlen)
+		 {
+//			 DEBUG_PRINT("2 mini heap size = %d %d %d\n",xPortGetMinimumEverFreeHeapSize(),(int32_t)uxTaskGetStackHighWaterMark(NULL),HAL_GetTick());
+			 HAL_UART_Transmit_DMA(&huart2, g_out_buf, readlen);
+		 }
+
+		 return 1;
+	 }else{
+		 return 0;
+	 }
+}
+
+
+inline void myPrintf(uint8_t type, uint8_t level, const char* format,...)
+{
+	uint8_t mLog[200];
+	uint32_t datalen = 0;
+	static uint8_t wirte_error[] = "Write failed!\r\n";
+	va_list ap;
+	va_start(ap,format);
+
+	if(level <= LOG_LEVEL && print_switch[type]){
+			//sprintf((char*)mLog,"level = 0x%x ", level);
+			datalen = vsnprintf((char*)&mLog, BUFFSIZE, format, ap);
+			datalen = cb_write(pmngr,mLog,strlen((char*)mLog));
+			if(datalen == 0) {
+				HAL_UART_Transmit_DMA(&huart2, wirte_error, strlen((char*)wirte_error));
+				writefailCount++;
+				if(writefailCount > WRITEFAILGUARD) {}
+					//HAL_NVIC_SystemReset();
+			}
+	va_end(ap);
+	}
+}
+#ifdef CONSIST_TEST
+void myCTPrintf(uint32_t level, const char* format,...)
+{
+	uint8_t mLog[200];
+	uint32_t datalen = 0;
+	static uint8_t wirte_error[] = "Write failed!\r\n";
+	va_list ap;
+	va_start(ap,format);
+
+	if(level <= LOG_LEVEL)
+	{
+		datalen = vsnprintf((char*)&mLog, BUFFSIZE, format, ap);
+		datalen = cb_write(ctpmngr,mLog,strlen((char*)mLog));
+		if(datalen == 0){
+			HAL_UART_Transmit_DMA(&huart2, wirte_error, strlen((char*)wirte_error));
+			writefailCount++;
+			if(writefailCount > WRITEFAILGUARD) HAL_NVIC_SystemReset();
+		}
+	    va_end(ap);
+	}
+}
+#endif
+
+uint8_t sendSensorData(void)
+{
+	#ifdef SENSOR_ENABLE
+	uint32_t readlen;
+	readlen = cb_read(sensorpmngr,sensor_out_buf,OUT_BUF_SIZE);
+	//DEBUG_PRINT("\n");
+	#ifdef CONSIST_TEST
+	if (huart2.gState == HAL_UART_STATE_READY){
+		 for(int i=0; i<readlen; i++)
+		 {
+//		   DEBUG_PRINT("%c", g_out_buf[i]);
+		 }
+	 }
+	#endif
+	 if (hlpuart1.gState == HAL_UART_STATE_READY){
+		 HAL_UART_Transmit_DMA(&hlpuart1, sensor_out_buf, readlen);
+		 return 1;
+	 }else{
+		 return 0;
+	 }
+	 #endif
+	return 0;
+}
+
+uint8_t mLog[200]={0};
+void sensorPrintf(const char* format,...)
+{
+	#ifdef SENSOR_ENABLE
+	
+	uint32_t datalen = 0;
+	static uint8_t wirte_error[] = "Write failed!\r\n";
+	va_list ap;
+	va_start(ap,format);
+	memset(mLog,0,200);
+	//sprintf((char*)mLog,"level = 0x%x ", level);
+	datalen = vsnprintf((char*)&mLog, BUFFSIZE, format, ap);
+	datalen = cb_write(sensorpmngr,mLog,strlen((char*)mLog));
+	//DEBUG_PRINT("sensorprntf length=%d\n", datalen);
+	if(datalen < strlen((char*)mLog)){
+		//HAL_UART_Transmit_DMA(&hlpuart1, wirte_error, strlen((char*)wirte_error));
+		#ifdef SX1268_SS
+		DEBUG_PRINT("sensor buf is full!\n");
+		#endif
+	}
+	va_end(ap);
+	#endif
+}
+
+
+void ErrorLog(const char* format,...)
+{
+	static uint8_t wirte_error[] = "Write failed!\r\n";
+	//static uint8_t enter[] = ":\r\n";
+	struct LOG_MESSAGE log_message;
+	uint32_t datalen = 0;
+	int sstrlen = 0 ;
+	if(logOnE){
+		cb_write(pmngr,(uint8_t*)modName,strlen(modName));
+		//cb_write(pmngr,enter,strlen((char*)enter));
+		strcpy(log_message.message, "EL:");
+		log_message.message_len = 3;
+	
+		va_list ap;
+		va_start(ap,format);
+		sstrlen = vsnprintf((char*)&(log_message.message[3]), BUFFSIZE, format, ap);
+		log_message.message_len += sstrlen;
+		datalen = cb_write(pmngr,(uint8_t*)log_message.message,log_message.message_len);
+		if(datalen == 0){
+			HAL_UART_Transmit_DMA(&huart2, wirte_error, strlen((char*)wirte_error));
+			writefailCount++;
+			if(writefailCount > WRITEFAILGUARD) HAL_NVIC_SystemReset();
+		}
+		va_end(ap);
+	}
+	
+}
+void AlarmLog(const char* format,...)
+{
+	static uint8_t wirte_error[] = "Write failed!\r\n";
+	//static uint8_t enter[] = ":\r\n";
+	struct LOG_MESSAGE log_message;
+	uint32_t datalen = 0;
+	int sstrlen = 0 ;
+	if(logOnA){
+		cb_write(pmngr,(uint8_t*)modName,strlen(modName));
+		//cb_write(pmngr,enter,strlen((char*)enter));
+		strcpy(log_message.message, "AL:");
+		log_message.message_len = 3;
+	
+		va_list ap;
+		va_start(ap,format);
+		sstrlen = vsnprintf((char*)&(log_message.message[3]), BUFFSIZE, format, ap);
+		log_message.message_len += sstrlen;
+		datalen = cb_write(pmngr,(uint8_t*)log_message.message,log_message.message_len);
+		if(datalen == 0){
+			HAL_UART_Transmit_DMA(&huart2, wirte_error, strlen((char*)wirte_error));
+			writefailCount++;
+			if(writefailCount > WRITEFAILGUARD) HAL_NVIC_SystemReset();
+		}
+		va_end(ap);
+	}
+}
+void NormalLog(const char* format,...)
+{
+	static uint8_t wirte_error[] = "Write failed!\r\n";
+	//static uint8_t enter[] = ":\r\n";
+	struct LOG_MESSAGE log_message;
+	uint32_t datalen = 0;
+	int sstrlen = 0 ;
+	if(logOnN){
+		cb_write(pmngr,(uint8_t*)modName,strlen(modName));
+		//cb_write(pmngr,enter,strlen((char*)enter));
+		strcpy(log_message.message, "NL:");
+		log_message.message_len = 3;
+	
+		va_list ap;
+		va_start(ap,format);
+		sstrlen = vsnprintf((char*)&(log_message.message[3]), BUFFSIZE, format, ap);
+		log_message.message_len += sstrlen;
+		datalen = cb_write(pmngr,(uint8_t*)log_message.message,log_message.message_len);
+		if(datalen == 0){
+			HAL_UART_Transmit_DMA(&huart2, wirte_error, strlen((char*)wirte_error));
+		    writefailCount++;
+			if(writefailCount > WRITEFAILGUARD) HAL_NVIC_SystemReset();
+		}
+		va_end(ap);
+	}
+}

@@ -1,0 +1,108 @@
+20:54:04 **** Incremental Build of configuration Debug for project W5500 ****
+make -j6 all 
+arm-none-eabi-gcc "../Core/Src/stm32l4xx_it.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32L496xx -c -I../Core/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/stm32l4xx_it.d" -MT"Core/Src/stm32l4xx_it.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/stm32l4xx_it.o"
+../Core/Src/stm32l4xx_it.c: In function 'UART4_IRQHandler':
+../Core/Src/stm32l4xx_it.c:246:11: warning: variable 'temp1' set but not used [-Wunused-but-set-variable]
+  246 |      int  temp1 = (&huart4)->Instance->ISR;  //清除状�?�寄存器SR,读取SR寄存器可以实现清除SR寄存器的功能
+      |           ^~~~~
+arm-none-eabi-gcc -o "W5500.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\workspace01(1)(2)\workspace01(1)\W5500\STM32L496RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="W5500.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: W5500.elf
+ 
+arm-none-eabi-size   W5500.elf 
+arm-none-eabi-objdump -h -S  W5500.elf  > "W5500.list"
+arm-none-eabi-objcopy  -O binary  W5500.elf  "W5500.bin"
+   text	   data	    bss	    dec	    hex	filename
+  36248	    184	  10432	  46864	   b710	W5500.elf
+Finished building: default.size.stdout
+ 
+Finished building: W5500.bin
+ 
+Finished building: W5500.list
+ 
+20:54:07 **** Incremental Build of configuration Debug for project W5500 ****
+make -j6 all 
+arm-none-eabi-size   W5500.elf 
+   text	   data	    bss	    dec	    hex	filename
+  36248	    184	  10432	  46864	   b710	W5500.elf
+Finished building: default.size.stdout
+ 
+20:55:04 **** Incremental Build of configuration Debug for project W5500 ****
+make -j6 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32L496xx -c -I../Core/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+../Core/Src/main.c: In function 'data_receive':
+../Core/Src/main.c:123:9: warning: variable 'temp1' set but not used [-Wunused-but-set-variable]
+  123 |    int  temp1 = (&huart4)->Instance->ISR;  //清除状�?�寄存器SR,读取SR寄存器可以实现清除SR寄存器的功能
+      |         ^~~~~
+../Core/Src/main.c: In function 'main':
+../Core/Src/main.c:250:29: warning: format '%d' expects argument of type 'int', but argument 2 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
+  250 |       printf("send ok time %d\r\n",HAL_GetTick());
+      |                            ~^      ~~~~~~~~~~~~~
+      |                             |      |
+      |                             int    uint32_t {aka long unsigned int}
+      |                            %ld
+arm-none-eabi-gcc -o "W5500.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\workspace01(1)(2)\workspace01(1)\W5500\STM32L496RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="W5500.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: W5500.elf
+ 
+arm-none-eabi-size   W5500.elf 
+arm-none-eabi-objdump -h -S  W5500.elf  > "W5500.list"
+arm-none-eabi-objcopy  -O binary  W5500.elf  "W5500.bin"
+   text	   data	    bss	    dec	    hex	filename
+  36248	    184	  10432	  46864	   b710	W5500.elf
+Finished building: default.size.stdout
+ 
+Finished building: W5500.bin
+ 
+Finished building: W5500.list
+ 
+20:57:00 **** Incremental Build of configuration Debug for project W5500 ****
+make -j6 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32L496xx -c -I../Core/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+../Core/Src/main.c: In function 'data_receive':
+../Core/Src/main.c:123:9: warning: variable 'temp1' set but not used [-Wunused-but-set-variable]
+  123 |    int  temp1 = (&huart4)->Instance->ISR;  //清除状�?�寄存器SR,读取SR寄存器可以实现清除SR寄存器的功能
+      |         ^~~~~
+../Core/Src/main.c: In function 'main':
+../Core/Src/main.c:250:29: warning: format '%d' expects argument of type 'int', but argument 2 has type 'uint32_t' {aka 'long unsigned int'} [-Wformat=]
+  250 |       printf("send ok time %d\r\n",HAL_GetTick());
+      |                            ~^      ~~~~~~~~~~~~~
+      |                             |      |
+      |                             int    uint32_t {aka long unsigned int}
+      |                            %ld
+arm-none-eabi-gcc -o "W5500.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\workspace01(1)(2)\workspace01(1)\W5500\STM32L496RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="W5500.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: W5500.elf
+ 
+arm-none-eabi-size   W5500.elf 
+arm-none-eabi-objdump -h -S  W5500.elf  > "W5500.list"
+arm-none-eabi-objcopy  -O binary  W5500.elf  "W5500.bin"
+   text	   data	    bss	    dec	    hex	filename
+  35676	    184	  10432	  46292	   b4d4	W5500.elf
+Finished building: default.size.stdout
+ 
+Finished building: W5500.bin
+ 
+Finished building: W5500.list
+ 
+20:59:33 **** Incremental Build of configuration Debug for project uart4_demo ****
+make -j6 all 
+arm-none-eabi-gcc "../Core/Src/tim.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32L496xx -c -I../Core/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32L4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/tim.d" -MT"Core/Src/tim.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/tim.o"
+arm-none-eabi-gcc -o "uart4_demo.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\uart4_demo\STM32L496RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="uart4_demo.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: uart4_demo.elf
+ 
+arm-none-eabi-size   uart4_demo.elf 
+arm-none-eabi-objdump -h -S  uart4_demo.elf  > "uart4_demo.list"
+arm-none-eabi-objcopy  -O binary  uart4_demo.elf  "uart4_demo.bin"
+   text	   data	    bss	    dec	    hex	filename
+  18860	   1320	   1952	  22132	   5674	uart4_demo.elf
+Finished building: default.size.stdout
+ 
+Finished building: uart4_demo.bin
+ 
+Finished building: uart4_demo.list
+ 
+09:14:56 **** Incremental Build of configuration Debug for project W5500 ****
+make -j6 all 
+arm-none-eabi-size   W5500.elf 
+   text	   data	    bss	    dec	    hex	filename
+  35676	    184	  10432	  46292	   b4d4	W5500.elf
+Finished building: default.size.stdout
+ 
